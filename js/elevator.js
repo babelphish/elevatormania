@@ -40,7 +40,7 @@ playGame.prototype = {
 		personFactory = new PersonFactory();
 
 		for (var i = 0; i < 3; i++) {
-			people[i] = personFactory.getPerson({ id: this.loaded, space: 5, floor: 1, pace: 7 });
+			people[i] = personFactory.getPerson({ space: 5, floor: 1, pace: 7 });
 		}
 
 		timer = game.time.create(false);
@@ -115,7 +115,11 @@ Person.prototype.walkTo = function(space) {
 	else  if (directionFromX === 1) {
 		this.facingDirection = FACING.LEFT;
 	}
+	else {
+		return;
+	}
 
+	this.cancelAnimations();
 	walkAndStop(destinationX);
 	
 	function walkAndStop(destinationX) {
@@ -139,15 +143,22 @@ Person.prototype.walkTo = function(space) {
 }
 
 Person.prototype.stopAndStand = function() {
-	if (this.bodyAnimation) {
-		this.bodyAnimation.stop();
-		this.walkTween.stop();
-	}
+	this.cancelAnimations();
 
 	var currentFacingText = this.getFacingDirectionText();	
 	this.bodyAnimation = this.body.animations.play('look_' + currentFacingText, 1, false);
 	this.head.animations.play('look_' + currentFacingText, 1, false);
 	this.updateHeadPosition();
+}
+
+Person.prototype.cancelAnimations = function() {
+	if (this.bodyAnimation) {
+		this.bodyAnimation.stop();
+	}	
+
+	if (this.walkTween) {
+		this.walkTween.stop();
+	}
 }
 
 Person.prototype.getFacingDirection = function() {
