@@ -1,11 +1,11 @@
 var game;
 var floors = 3;
-var floorHeight = 200;
+var floorHeight = 250;
 var spaceWidth = 80;
 var spaces = 10;
 var gameHeight = floors * floorHeight;
 var gameWidth = spaceWidth * spaces;
-
+var hallwayHeight = 20;
 var personHeight = 151;
 var personScaledHeight = (personHeight * 0.75);
 var personWidth = 104;
@@ -31,6 +31,8 @@ playGame.prototype = {
 	preload: function() {
 			game.load.spritesheet('person', 'assets/sprites/body_no_head.png', personWidth, personHeight, 14);
 			game.load.spritesheet('head_danny', 'assets/sprites/head_danny3.png', 50, headHeight, 4);
+			game.load.image('carpet', 'assets/sprites/carpet.png');
+			game.load.image('concrete', 'assets/sprites/concrete.png');
 		},
 	create: function() {
 		game.scale.pageAlignHorizontally = true;
@@ -39,15 +41,22 @@ playGame.prototype = {
 		game.stage.backgroundColor = 0xD3D3D3;
 		personFactory = new PersonFactory();
 
-		for (var i = 0; i < 3; i++) {
-			people[i] = personFactory.getPerson({ space: 5, floor: 1, pace: 7 });
+		
+		for (var floor = 1; floor <= floors; floor++) {
+			var hallway = game.add.tileSprite(0, getFloorY(floor) - hallwayHeight, gameWidth, hallwayHeight, 'carpet');
+			var concrete = game.add.tileSprite(0, getFloorY(floor), gameWidth, 10, 'concrete');
+			hallway.tileScale.y = hallwayHeight / 180;
+		}
+				
+		for (var i = 0; i < 9; i++) {
+			people[i] = personFactory.getPerson({ space: 5, floor: i % 3 + 1, pace: 7 });
 		}
 
 		timer = game.time.create(false);
 		
 		//  Set a TimerEvent to occur after 2 seconds
 		timer.loop(3000, function() {
-			for (var i = 0; i < 3; i++) {
+			for (var i = 0; i < 9; i++) {
 				var location = game.rnd.integerInRange(1, 10);
 				people[i].walkTo(location);
 				console.log('Person: ' + i + ' Location: ' + location);
@@ -188,7 +197,7 @@ Person.prototype.currentX = function() {
 }
 
 Person.prototype.getYCoordFromFloor = function(floor) {
-	return ((gameHeight - ((floor - 1) * floorHeight)) - personScaledHeight);
+	return (getFloorY(floor) - personScaledHeight) - (hallwayHeight / 2);
 }
 
 Person.prototype.getXCoordFromSpace = function(space) {
@@ -216,5 +225,7 @@ Person.prototype.compareWithCurrentX = function(otherX) {
 	}
 }
 
-
+function getFloorY(floor) {
+	return (gameHeight - ((floor - 1) * floorHeight));
+}
 
