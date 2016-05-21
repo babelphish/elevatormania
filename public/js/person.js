@@ -1,88 +1,19 @@
-var game;
-var floors = 3;
-var floorHeight = 250;
-var spaceWidth = 80;
-var spaces = 10;
-var gameHeight = floors * floorHeight;
-var gameWidth = spaceWidth * spaces;
-var hallwayHeight = 20;
-var personHeight = 151;
-var personScaledHeight = (personHeight * 0.75);
-var personWidth = 104;
-var personScaledWidth = (personWidth * 0.75);
-var headHeight = 60;
-var headScaledHeight = (headHeight * 0.5);
-var people = {};
+var people = people || {};
 
-var FACING = { 'LEFT' : 1, 'RIGHT' : 2 } 
-
-var walkHeadAdjustments = [[43,31],[42,31],[40,33],[46,31],[39,31],[39,34],[39,31],[33,31],[40,33],[41,31],[36,31],[43,34],[45,33],[46,33]]; 
-
-window.onload = function() {
-	game = new Phaser.Game(gameWidth, gameHeight, Phaser.AUTO, "main-canvas");
-	game.state.add("PlayGame", playGame);
-	game.state.start("PlayGame");
-}
-
-var personFactory;
-
-var playGame = function(game) {}
-playGame.prototype = {
-	preload: function() {
-			game.load.spritesheet('person', '/sprites/body_no_head.png', personWidth, personHeight, 14);
-			game.load.spritesheet('head_danny', '/sprites/head_danny3.png', 50, headHeight, 4);
-			game.load.image('carpet', '/sprites/carpet.png');
-			game.load.image('concrete', '/sprites/concrete.png');
-		},
-	create: function() {
-		game.scale.pageAlignHorizontally = true;
-		game.scale.pageAlignVertically = true;
-		game.scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;
-		game.stage.backgroundColor = 0xD3D3D3;
-		personFactory = new PersonFactory();
-
-		
-		for (var floor = 1; floor <= floors; floor++) {
-			var hallway = game.add.tileSprite(0, getFloorY(floor) - hallwayHeight, gameWidth, hallwayHeight, 'carpet');
-			var concrete = game.add.tileSprite(0, getFloorY(floor), gameWidth, 10, 'concrete');
-			hallway.tileScale.y = hallwayHeight / 180;
-		}
-				
-		for (var i = 0; i < 9; i++) {
-			people[i] = personFactory.getPerson({ space: 5, floor: i % 3 + 1, pace: 7 });
-		}
-
-		timer = game.time.create(false);
-		
-		//  Set a TimerEvent to occur after 2 seconds
-		timer.loop(3000, function() {
-			for (var i = 0; i < 9; i++) {
-				var location = game.rnd.integerInRange(1, 10);
-				people[i].walkTo(location);
-				console.log('Person: ' + i + ' Location: ' + location);
-			}
-		}, this);
-		timer.start();
-	},
-	update: function() {
-	
-	},
-	render: function() {
-	}
-}
-
-function PersonFactory() {
+function PersonFactory(building) {
 	this.loaded = 0;
+	this.building = building; //the building we are creating people in;
 }
 
 PersonFactory.prototype.getPerson = function(init) {
 	this.loaded++;
-	var newPerson = new Person(init);
+	var newPerson = new Person(init, this.building);
 	people[this.loaded] = newPerson;
 	return newPerson;
 }
 
-function Person(init) {
+function Person(init, building) {
+	this.building = building;
 	this.floor = init.floor != null ? init.floor : 1;
 	this.pace = init.pace != null ? init.pace : 1;
 	this.space = init.space != null ? init.space : 1;
@@ -94,7 +25,7 @@ function Person(init) {
 	this.personSprites.y = this.getYCoordFromFloor(this.floor);
 		
 	this.body = game.add.sprite(0, 0, 'person');
-	this.head = game.add.sprite(45, headScaledHeight, 'head_danny');
+	this.head = game.add.sprite(45, constants.headScaledHeight, 'head_danny');
 	this.personSprites.add(this.body);
 	this.personSprites.add(this.head);
 	this.body.scale.setTo(0.75, 0.75);
@@ -197,20 +128,19 @@ Person.prototype.currentX = function() {
 }
 
 Person.prototype.getYCoordFromFloor = function(floor) {
-	return (getFloorY(floor) - personScaledHeight) - (hallwayHeight / 2);
+	return (this.building.getFloorY(floor) - constants.personScaledHeight) - (constants.hallwayHeight / 2);
 }
 
 Person.prototype.getXCoordFromSpace = function(space) {
-	return ((space - 1) * spaceWidth) + ((spaceWidth - personScaledWidth) / 2);
+	return ((space - 1) * constants.spaceWidth) + ((constants.spaceWidth - constants.personScaledWidth) / 2);
 }
 
 Person.prototype.updateHeadPosition = function() {
-	var frameNumber = this.bodyAnimation.frame
-	var adjust = walkHeadAdjustments[frameNumber];
+	var frameNumber = this.bodyAnimation.frame;
+	var adjust = constants.walkHeadAdjustments[frameNumber];
 	this.head.x = adjust[0];
 	this.head.y = adjust[1];
 }
-
 
 Person.prototype.compareWithCurrentX = function(otherX) {
 	var bodyX = this.currentX();
@@ -224,8 +154,3 @@ Person.prototype.compareWithCurrentX = function(otherX) {
 		return 1;
 	}
 }
-
-function getFloorY(floor) {
-	return (gameHeight - ((floor - 1) * floorHeight));
-}
-
