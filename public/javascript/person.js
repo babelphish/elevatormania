@@ -15,7 +15,6 @@ PersonFactory.prototype.getPerson = function(init) {
 function Person(init, building) {
 	this.building = building;
 	this.floor = init.floor != null ? init.floor : 1;
-	this.pace = init.pace != null ? init.pace : 1;
 	this.space = init.space != null ? init.space : 1;
 	this.facingDirection = init.facingDirection != null ? init.facingDirection : FACING.RIGHT;
 	this.pace = init.pace != null ? init.pace : 7;
@@ -128,11 +127,11 @@ Person.prototype.currentX = function() {
 }
 
 Person.prototype.getYCoordFromFloor = function(floor) {
-	return (this.building.getFloorY(floor) - constants.personScaledHeight) - (constants.hallwayHeight / 2);
+	return (this.building.getYCoordFromFloor(floor) - constants.personScaledHeight) - (constants.hallwayHeight / 2);
 }
 
 Person.prototype.getXCoordFromSpace = function(space) {
-	return ((space - 1) * constants.spaceWidth) + ((constants.spaceWidth - constants.personScaledWidth) / 2);
+	return (this.building.getXCoordFromSpace(space) + ((constants.spaceWidth - constants.personScaledWidth) / 2));
 }
 
 Person.prototype.updateHeadPosition = function() {

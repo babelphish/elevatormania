@@ -5,7 +5,9 @@ var app = express();
 
 app.set('port', (process.env.PORT || 5000));
 
-app.use(minify({cache: __dirname + '/cache'}));
+if (app.get('env') != 'development') {
+	app.use(minify({cache: __dirname + '/cache'}));
+}
 app.use(express.static(__dirname + '/public'));
 app.use(version);
 

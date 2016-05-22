@@ -1,13 +1,13 @@
 var game;
 var people = {};
 var FACING = { 'LEFT' : 1, 'RIGHT' : 2 } 
+var spaces = 12;
+var floors = 4;
 
 window.onload = function() {	
 	var people = {};
 
-	var building = new Building(3, 10);
-
-	game = new Phaser.Game(building.width, building.height, Phaser.AUTO, "main-canvas");
+	game = new Phaser.Game(spaces * constants.spaceWidth, floors * constants.floorHeight, Phaser.AUTO, "main-canvas");
 
 	var playGame = function(game) {};
 	playGame.prototype = {
@@ -16,12 +16,22 @@ window.onload = function() {
 			game.load.spritesheet('head_danny', '/sprites/head_danny3.png', 50, constants.headHeight, 4);
 			game.load.image('carpet', '/sprites/carpet.png');
 			game.load.image('concrete', '/sprites/concrete.png');
+			game.load.image('left_door', '/sprites/left_door.png');
+			game.load.image('right_door', '/sprites/right_door.png');
+			game.load.image('elevator_exterior', '/sprites/elevator_exterior.png');
 		},
 		create: function() {
 			game.scale.pageAlignHorizontally = true;
 			game.scale.pageAlignVertically = true;
 			game.scale.scaleMode = Phaser.ScaleManager.SHOW_ALL;
 			game.stage.backgroundColor = 0xD3D3D3;
+			
+			var building = new Building(floors, spaces, [{ 
+				"leftSpace" : 2,
+				"bottomFloor" : 1,
+				"topFloor" : floors
+			}]);
+			
 			building.render();
 			var personFactory = new PersonFactory(building);
 					
@@ -35,7 +45,7 @@ window.onload = function() {
 			timer.loop(3000, function() {
 				for (var i = 0; i < 9; i++) {
 					var location = game.rnd.integerInRange(1, 10);
-					people[i].walkTo(location);
+					//people[i].walkTo(location);
 				}
 			}, this);
 			timer.start();
