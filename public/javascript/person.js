@@ -131,7 +131,7 @@ Person.prototype.getYCoordFromFloor = function(floor) {
 }
 
 Person.prototype.getXCoordFromSpace = function(space) {
-	return (this.building.getXCoordFromSpace(space) + ((constants.spaceWidth - constants.personScaledWidth) / 2));
+	return (this.building.getXCoordFromSpace(space) + (constants.spaceWidth - (constants.personScaledWidth + 12)) / 2); //there's an offset to account for the white space of where a body stands
 }
 
 Person.prototype.updateHeadPosition = function() {

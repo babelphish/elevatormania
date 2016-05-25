@@ -1,5 +1,19 @@
+@font-face{ 
+	font-family: 'EthanFont';
+	src: url('/fonts/EthBlackEthon.ttf') format('truetype');
+}
+
 #main-canvas {
 	max-width: 800px;
 	margin-left: auto;
 	margin-right: auto;
+}
+
+#title {
+	margin-left: auto;
+	margin-right: auto;
+	font-size: 50pt;
+	width: 100%;
+	text-align: center;
+	font-family: 'EthanFont', Arial, sans-serif;
 }

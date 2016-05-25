@@ -21,7 +21,9 @@ var constants = constants || {};
 	this.elevatorDoorScaledWidth = this.elevatorDoorWidth * this.elevatorScaling;
 	this.elevatorDoorHeight = 262;
 	this.elevatorDoorScaledHeight = this.elevatorDoorHeight * this.elevatorScaling;
-
+	this.elevatorDoorWidthOffset = ((this.elevatorExteriorScaledWidth - (this.elevatorDoorScaledWidth * 2)) / 2);
+	this.elevatorDoorHeightOffset = 24;
+	
 	this.elevatorInteriorHeight = 262;
 	this.elevatorInteriorScaledHeight = this.elevatorInteriorHeight * this.elevatorScaling;
 	this.elevatorInteriorWidth = 188;
