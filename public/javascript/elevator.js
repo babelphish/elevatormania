@@ -4,7 +4,7 @@ function Elevator(init, building) {
 	this.bottomFloor = init.bottomFloor != null ? init.bottomFloor : 1;
 	this.topFloor = init.topFloor != null ? init.topFloor : 2;
 	this.shaft = new ElevatorShaft(this);
-	this.elevatorCar = new ElevatorCar({ "floor" : this.bottomFloor }, this);
+	this.car = new ElevatorCar({ "floor" : this.bottomFloor }, this);
 	this.entrances = {};
 	
 	for (var i = this.bottomFloor; i <= this.topFloor; i++) {
@@ -15,7 +15,7 @@ function Elevator(init, building) {
 
 Elevator.prototype.render = function() {
 
-	this.elevatorCar.render();
+	this.car.render();
 	for (var entrance in this.entrances) {
 		this.entrances[entrance].render();
 	}
@@ -41,6 +41,7 @@ function ElevatorEntrance(init, parentElevator) {
 }
 
 ElevatorEntrance.prototype.render = function() {
+	var that = this;
 	this.exterior = game.add.sprite(0,0, 'elevator_exterior');
 	this.exterior.scale.setTo(constants.elevatorScaling, constants.elevatorScaling);	
 	this.sprites.add(this.exterior);
@@ -69,12 +70,16 @@ ElevatorEntrance.prototype.render = function() {
 	this.exterior.inputEnabled = true;
 
     this.exterior.events.onInputDown.add(function() {
-		if (!this.transitioning) {
-			if (this.isOpen) {
-				this.close();
-			} else {
-				this.open();
+		if (this.parentElevator.car.floor == that.floor) {
+			if (!that.parentElevator.car.transitioning) {
+				if (this.isOpen) {
+					this.close();
+				} else {
+					this.open();
+				}
 			}
+		} else {
+			this.parentElevator.car.sendTo(that.floor);
 		}
 	}, this);
 	
@@ -93,33 +98,38 @@ ElevatorEntrance.prototype.building = function() {
 }
 
 ElevatorEntrance.prototype.open = function() {
-	this.changeDoorState(0);
+	this.changeDoorState(0, true);
 }
 
 ElevatorEntrance.prototype.close = function() {
-	this.changeDoorState(constants.elevatorDoorWidth);
+	this.changeDoorState(constants.elevatorDoorWidth, false);
 }
 
-ElevatorEntrance.prototype.changeDoorState = function(width) {
-	if (this.transitioning)
-		return;
-	
-	this.transitioning = true;
-	var tween = game.add.tween(this.cropRect).to( { x: constants.elevatorDoorWidth - width, width: width }, 250)
-	tween.onUpdateCallback(function() { 
-		this.leftDoor.updateCrop();
-		this.rightDoor.updateCrop();
-	}, this);
-	tween.onComplete.add(function() {
-		this.leftDoor.updateCrop();
-		this.rightDoor.updateCrop();
-		this.transitioning = false;
-		this.isOpen = !this.isOpen;
-	}, this);
-	
-	tween.start();		
-}
+ElevatorEntrance.prototype.changeDoorState = function(width, isOpen) {
+	if (this.transitioning) {
+		this.openCloseTween.stop();
+	}
 
+	this.isOpen = isOpen;
+	
+	if (width != this.cropRect.width) {		
+		var tweenTime = (Math.abs(width - this.cropRect.width) / constants.elevatorDoorWidth) * constants.elevatorDoorWidthTravelTime;
+		
+		this.transitioning = true;
+		this.openCloseTween = game.add.tween(this.cropRect).to( { x: constants.elevatorDoorWidth - width, width: width }, tweenTime )
+		this.openCloseTween.onUpdateCallback(function() { 
+			this.leftDoor.updateCrop();
+			this.rightDoor.updateCrop();
+		}, this);
+		this.openCloseTween.onComplete.add(function() {
+			this.leftDoor.updateCrop();
+			this.rightDoor.updateCrop();
+			this.transitioning = false;
+		}, this);
+		
+		this.openCloseTween.start();
+	}
+}
 
 function ElevatorCar(init, parentElevator) {
 	this.parentElevator = parentElevator;
@@ -127,7 +137,7 @@ function ElevatorCar(init, parentElevator) {
 	
 	this.sprites = game.add.group();
 	this.sprites.x = this.getXCoord();
-	this.sprites.y = this.getYCoord();
+	this.sprites.y = this.getYCoordFromFloor(this.floor);
 }
 
 ElevatorCar.prototype.render = function() {
@@ -140,10 +150,35 @@ ElevatorCar.prototype.getXCoord = function() {
 	return this.building().getXCoordFromSpace(this.parentElevator.leftSpace) + constants.elevatorDoorWidthOffset;
 }
 
-ElevatorCar.prototype.getYCoord = function() {
-	return (this.building().getYCoordFromFloor(this.floor) - constants.hallwayHeight - 12 - constants.elevatorInteriorScaledHeight);
+ElevatorCar.prototype.getYCoordFromFloor = function(floor) {
+	return (this.building().getYCoordFromFloor(floor) - constants.hallwayHeight - 12 - constants.elevatorInteriorScaledHeight)
 }
 
 ElevatorCar.prototype.building = function() {
 	return this.parentElevator.building;
+}
+
+ElevatorCar.prototype.timeToTravelBetweenFloors = function(floor1, floor2) {
+	return (Math.abs(floor1 - floor2) * constants.elevatorFloorTravelMilliseconds) + constants.elevatorFloorTravelOverheadMilliseconds;
+}
+
+ElevatorCar.prototype.sendTo = function(destinationFloor) {
+	var that = this;
+	if (this.transitioning)
+		return;
+
+	if (destinationFloor != this.floor) {	
+		this.transitioning = true;
+		
+		this.parentElevator.entrances[this.floor].close();
+		
+		var tween = game.add.tween(this.sprites).to( { y : that.getYCoordFromFloor(destinationFloor) }, that.timeToTravelBetweenFloors(this.floor, destinationFloor), Phaser.Easing.Quadratic.InOut);
+		tween.onComplete.add(function() {
+			this.transitioning = false;
+			this.floor = destinationFloor;
+			this.parentElevator.entrances[destinationFloor].open();
+		}, this);
+	
+		tween.start();
+	}
 }

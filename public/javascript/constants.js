@@ -24,11 +24,16 @@ var constants = constants || {};
 	this.elevatorDoorWidthOffset = ((this.elevatorExteriorScaledWidth - (this.elevatorDoorScaledWidth * 2)) / 2);
 	this.elevatorDoorHeightOffset = 24;
 	
+	this.elevatorDoorWidthTravelTime = 250;
+	
 	this.elevatorInteriorHeight = 262;
 	this.elevatorInteriorScaledHeight = this.elevatorInteriorHeight * this.elevatorScaling;
 	this.elevatorInteriorWidth = 188;
 	this.elevatorInteriorScaledWidth = this.elevatorInteriorWidth * this.elevatorScaling;
-		
+
+	this.elevatorFloorTravelOverheadMilliseconds = 250;
+	this.elevatorFloorTravelMilliseconds = 500;
+	
 	this.walkHeadAdjustments = [[43,31],[42,31],[40,33],[46,31],[39,31],[39,34],[39,31],[33,31],[40,33],[41,31],[36,31],[43,34],[45,33],[46,33]];
 }).apply(constants);
 
