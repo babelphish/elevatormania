@@ -4,21 +4,23 @@ function Elevator(init, building) {
 	this.bottomFloor = init.bottomFloor != null ? init.bottomFloor : 1;
 	this.topFloor = init.topFloor != null ? init.topFloor : 2;
 	this.shaft = new ElevatorShaft(this);
-	this.car = new ElevatorCar({ "floor" : this.bottomFloor }, this);
+	var carFloor = this.bottomFloor;
+	this.car = new ElevatorCar({ "floor" : carFloor }, this);
 	this.entrances = {};
 	
 	for (var i = this.bottomFloor; i <= this.topFloor; i++) {
-		var open = (i == this.bottomFloor);
+		var open = (i == carFloor);
 		this.entrances[i] = new ElevatorEntrance({ "floor" : i, "isOpen" : open }, this);
-	}
+	}	
 }
 
 Elevator.prototype.render = function() {
-
 	this.car.render();
 	for (var entrance in this.entrances) {
 		this.entrances[entrance].render();
 	}
+	
+	this.entrances[this.car.floor].setTransparent(true);
 }
 
 function ElevatorShaft(parent) {
@@ -43,7 +45,8 @@ function ElevatorEntrance(init, parentElevator) {
 ElevatorEntrance.prototype.render = function() {
 	var that = this;
 	this.exterior = game.add.sprite(0,0, 'elevator_exterior');
-	this.exterior.scale.setTo(constants.elevatorScaling, constants.elevatorScaling);	
+	this.exterior.scale.setTo(constants.elevatorScaling, constants.elevatorScaling);
+	this.transparent = false;
 	this.sprites.add(this.exterior);
 
 	if (this.isOpen) {	
@@ -65,7 +68,7 @@ ElevatorEntrance.prototype.render = function() {
 	this.rightDoor.scale.setTo(constants.elevatorScaling, constants.elevatorScaling);
 	this.rightDoor.crop(this.cropRect);
 	this.sprites.add(this.rightDoor);	
-	
+		
 	//make clickable.. for now
 	this.exterior.inputEnabled = true;
 
@@ -131,6 +134,25 @@ ElevatorEntrance.prototype.changeDoorState = function(width, isOpen) {
 	}
 }
 
+ElevatorEntrance.prototype.setTransparent = function(setTransparent) {
+	if (setTransparent == this.isTransparent()) //no need to change if it's already transparent
+		return;
+
+	this.transparent = setTransparent;
+	if (setTransparent) {
+		var alpha = 0.7;
+		this.leftDoor.alpha = alpha;
+		this.rightDoor.alpha = alpha;
+	} else {
+		this.leftDoor.alpha = 1;
+		this.rightDoor.alpha = 1;
+	}
+}
+
+ElevatorEntrance.prototype.isTransparent = function() {
+	return this.transparent;
+}
+
 function ElevatorCar(init, parentElevator) {
 	this.parentElevator = parentElevator;
 	this.floor = init.floor != null ? init.floor : 1;
@@ -166,11 +188,16 @@ ElevatorCar.prototype.sendTo = function(destinationFloor) {
 	var that = this;
 	if (this.transitioning)
 		return;
-
+	
 	if (destinationFloor != this.floor) {	
 		this.transitioning = true;
 		
 		this.parentElevator.entrances[this.floor].close();
+
+		var waitingForIntersection = true;
+		var waitingForDeintersection = false;
+		var testingFloor = getFloorOffset(1, this.floor, destinationFloor); //updated as the elevator moves
+		var testingEntrance = this.parentElevator.entrances[testingFloor];
 		
 		var tween = game.add.tween(this.sprites).to( { y : that.getYCoordFromFloor(destinationFloor) }, that.timeToTravelBetweenFloors(this.floor, destinationFloor), Phaser.Easing.Quadratic.InOut);
 		tween.onComplete.add(function() {
@@ -178,7 +205,43 @@ ElevatorCar.prototype.sendTo = function(destinationFloor) {
 			this.floor = destinationFloor;
 			this.parentElevator.entrances[destinationFloor].open();
 		}, this);
+		tween.onUpdateCallback(function() { 
+			if (waitingForIntersection) {
+				if (that.intersectsWith(testingEntrance)) {
+					testingEntrance.setTransparent(true);
+					waitingForIntersection = false;
+					waitingForDeintersection = true;
+					testingFloor = getFloorOffset(-1, testingFloor, destinationFloor);
+					testingEntrance = this.parentElevator.entrances[testingFloor];
+				}
+			} else if (waitingForDeintersection) {
+				if (!that.intersectsWith(testingEntrance)) {
+					testingEntrance.setTransparent(false);
+					waitingForIntersection = true;
+					waitingForDeintersection = false;
+					testingFloor = getFloorOffset(2, testingFloor, destinationFloor);
+					testingEntrance = this.parentElevator.entrances[testingFloor];					
+				}
+			}
+		}, this);
 	
 		tween.start();
 	}
+	
+	//value: sign determines closer or farther away (negative is farther), 
+	//       number equals how many floors
+	function getFloorOffset(value, floor, destination) {
+		if (destination == floor) {
+			return destination;
+		}
+		
+		var number = (destination - floor);
+		
+		var signTowardsDestination = (number && number / Math.abs(number));
+		return floor + (signTowardsDestination * value);
+	}	
+}
+
+ElevatorCar.prototype.intersectsWith = function(entrance) {
+	return Phaser.Rectangle.intersects(this.sprites.getBounds(), entrance.sprites.getBounds());
 }
