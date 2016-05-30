@@ -38,6 +38,7 @@ function ElevatorEntrance(init, parentElevator) {
 	this.transitioning = false;
 	
 	this.sprites = game.add.group();
+	this.doors = game.add.group();
 	this.sprites.x = this.getXCoord();
 	this.sprites.y = this.getYCoord();
 }
@@ -59,7 +60,7 @@ ElevatorEntrance.prototype.render = function() {
 	this.leftDoor.anchor.setTo(0, 0);
 	this.leftDoor.scale.setTo(constants.elevatorScaling, constants.elevatorScaling);
 	this.leftDoor.crop(this.cropRect);
-	this.sprites.add(this.leftDoor);
+	this.doors.add(this.leftDoor);
 
 		
 	this.rightDoor = game.add.sprite(constants.elevator, constants.elevatorDoorHeightOffset, 'right_door');
@@ -67,8 +68,9 @@ ElevatorEntrance.prototype.render = function() {
 	this.rightDoor.anchor.setTo(1,0);
 	this.rightDoor.scale.setTo(constants.elevatorScaling, constants.elevatorScaling);
 	this.rightDoor.crop(this.cropRect);
-	this.sprites.add(this.rightDoor);	
-		
+	this.doors.add(this.rightDoor);
+
+	this.sprites.add(this.doors);
 	//make clickable.. for now
 	this.exterior.inputEnabled = true;
 
@@ -114,13 +116,13 @@ ElevatorEntrance.prototype.changeDoorState = function(width, isOpen) {
 	}
 
 	this.isOpen = isOpen;
-	
-	if (width != this.cropRect.width) {		
+
+	if (width != this.cropRect.width) {
 		var tweenTime = (Math.abs(width - this.cropRect.width) / constants.elevatorDoorWidth) * constants.elevatorDoorWidthTravelTime;
 		
 		this.transitioning = true;
 		this.openCloseTween = game.add.tween(this.cropRect).to( { x: constants.elevatorDoorWidth - width, width: width }, tweenTime )
-		this.openCloseTween.onUpdateCallback(function() { 
+		this.openCloseTween.onUpdateCallback(function() {
 			this.leftDoor.updateCrop();
 			this.rightDoor.updateCrop();
 		}, this);
@@ -138,15 +140,17 @@ ElevatorEntrance.prototype.setTransparent = function(setTransparent) {
 	if (setTransparent == this.isTransparent()) //no need to change if it's already transparent
 		return;
 
+	if (this.transparencyTween != null)
+		this.transparencyTween.stop();
+		
 	this.transparent = setTransparent;
+	var newAlpha = 1;
 	if (setTransparent) {
-		var alpha = 0.7;
-		this.leftDoor.alpha = alpha;
-		this.rightDoor.alpha = alpha;
-	} else {
-		this.leftDoor.alpha = 1;
-		this.rightDoor.alpha = 1;
-	}
+		newAlpha = 0.7;
+	}	
+	
+	this.transparencyTween = game.add.tween(this.doors).to( { alpha: newAlpha }, 250);
+	this.transparencyTween.start();
 }
 
 ElevatorEntrance.prototype.isTransparent = function() {
